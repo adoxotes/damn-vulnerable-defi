@@ -12,10 +12,16 @@ contract FlashLoanReceiver is IERC3156FlashBorrower {
         pool = _pool;
     }
 
-    function onFlashLoan(address, address token, uint256 amount, uint256 fee, bytes calldata)
-        external
-        returns (bytes32)
-    {
+    // MARK: first address (initiator contract) argument never used!
+    // Meaning anyone can request flash loans on behalf of this contract
+    // and make it pay the fee to the pool
+    function onFlashLoan(
+        address,
+        address token,
+        uint256 amount,
+        uint256 fee,
+        bytes calldata
+    ) external returns (bytes32) {
         assembly {
             // gas savings
             if iszero(eq(sload(pool.slot), caller())) {
@@ -24,7 +30,8 @@ contract FlashLoanReceiver is IERC3156FlashBorrower {
             }
         }
 
-        if (token != address(NaiveReceiverPool(pool).weth())) revert NaiveReceiverPool.UnsupportedCurrency();
+        if (token != address(NaiveReceiverPool(pool).weth()))
+            revert NaiveReceiverPool.UnsupportedCurrency();
 
         uint256 amountToBeRepaid;
         unchecked {
